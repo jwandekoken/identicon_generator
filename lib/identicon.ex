@@ -8,9 +8,28 @@ defmodule Identicon do
     |> build_grid
     |> filter_odd_squares
     |> build_pixel_map
+    |> draw_image
+    # input is actually the second arg. The imageFile returned from the draw_image fn is the first.
+    |> save_image(input)
   end
 
-  def build_pixel_map(%{grid: grid} = image) do
+  defp save_image(imageFile, filename) do
+    File.mkdir_p!("identicons")
+    File.write("identicons/#{filename}.png", imageFile)
+  end
+
+  defp draw_image(%{color: color, pixel_map: pixel_map}) do
+    image = :egd.create(250, 250)
+    fill = :egd.color(color)
+
+    Enum.each(pixel_map, fn {start, stop} ->
+      :egd.filledRectangle(image, start, stop, fill)
+    end)
+
+    :egd.render(image)
+  end
+
+  defp build_pixel_map(%{grid: grid} = image) do
     pixel_map =
       Enum.map(grid, fn {_code, index} ->
         horizontal = rem(index, 5) * 50
@@ -25,7 +44,7 @@ defmodule Identicon do
     %Identicon.Image{image | pixel_map: pixel_map}
   end
 
-  def filter_odd_squares(%{grid: grid} = image) do
+  defp filter_odd_squares(%{grid: grid} = image) do
     grid =
       Enum.filter(
         grid,
@@ -38,7 +57,7 @@ defmodule Identicon do
     %Identicon.Image{image | grid: grid}
   end
 
-  def build_grid(%{hex: hex} = image) do
+  defp build_grid(%{hex: hex} = image) do
     grid =
       hex
       |> Enum.chunk_every(3, 3, :discard)
@@ -51,16 +70,16 @@ defmodule Identicon do
     %Identicon.Image{image | grid: grid}
   end
 
-  def mirror_row(row) do
+  defp mirror_row(row) do
     [first, second | _tail] = row
     row ++ [second, first]
   end
 
-  def pick_color(%{hex: [r, g, b | _tail]} = image) do
+  defp pick_color(%{hex: [r, g, b | _tail]} = image) do
     %Identicon.Image{image | color: {r, g, b}}
   end
 
-  def hash_input(input) do
+  defp hash_input(input) do
     hex =
       :crypto.hash(:md5, input)
       |> :binary.bin_to_list()

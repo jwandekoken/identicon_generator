@@ -6,6 +6,19 @@ defmodule Identicon do
     |> hash_input
     |> pick_color
     |> build_grid
+    |> filter_odd_squares
+  end
+
+  def filter_odd_squares(%{grid: grid} = image) do
+    grid = Enum.filter(
+      grid,
+      fn {code, _index} ->
+        # return true if divisible by 2
+        rem(code, 2) == 0
+      end
+    )
+
+    %Identicon.Image{image | grid: grid}
   end
 
   def build_grid(%{hex: hex} = image) do
